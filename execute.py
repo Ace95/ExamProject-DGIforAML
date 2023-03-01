@@ -1,7 +1,13 @@
+import numpy as np
+import pandas as pd
 import torch
 from torch import nn
+import scipy.sparse as sp
 from utils import load_data, preprocess_features, normalize_adj, sparse_mx_to_torch_sparse_tensor
 from layers import DGI, LogReg
+from sklearn.ensemble import RandomForestClassifier as RFC
+from sklearn.metrics import confusion_matrix,f1_score, precision_score, recall_score
+from sklearn.model_selection import train_test_split
 
 
 batch_size = 1
@@ -96,6 +102,7 @@ for epoch in range(nb_epochs):
     loss.backward()
     optimiser.step()
 
+    model.load_state_dict(torch.load('best_dgi.pkl'))
 
     embeds, _ = model.embed(features, sp_adj if sparse else adj, sparse, None)
     train_embs = embeds[0, idx_train]
@@ -113,6 +120,8 @@ for epoch in range(nb_epochs):
     tot = torch.zeros(1)
     tot = tot.cuda()
 
+
+# Logistic Regression
 accs = []
 
 for _ in range(50):
@@ -136,17 +145,55 @@ for _ in range(50):
 
     logits = log(test_embs)
     preds = torch.argmax(logits, dim=1)
-    preds = preds.cuda()
-    num = torch.sum(preds == test_lbls).float()
-    num = num.cuda()
-    div = test_lbls.shape[0]
-    acc = num / div
-    acc = acc.cuda()
-    accs.append(acc * 100)
-    tot += acc
 
-print('Average accuracy:', tot / 50)
+F1 = f1_score(test_lbls.cpu(),preds.cpu(),pos_label=0)
+Recall = recall_score(test_lbls.cpu(),preds.cpu(),pos_label=0)
+Precision = precision_score(test_lbls.cpu(),preds.cpu(),pos_label=0)
+cm = confusion_matrix(test_lbls.cpu(),preds.cpu())
 
-accs = torch.stack(accs)
-print(accs.mean())
-print(accs.std())
+print('Precision: ', Precision,' Recall: ', Recall, ' F1: ', F1)
+print(cm)
+
+# Random Forest
+
+data_ft = pd.read_csv('./Elliptic/raw/elliptic_txs_features.csv', header=None)
+data_ed = pd.read_csv('./Elliptic/raw/elliptic_txs_edgelist.csv')
+data_lb = pd.read_csv('./Elliptic/raw/elliptic_txs_classes.csv')
+
+dataset = data_ft.merge(data_ed, right_index=True, left_index=True)
+dataset = dataset.merge(data_lb, right_index=True, left_index=True) 
+dataset.drop(columns=['txId'],inplace=True)
+dataset = dataset[dataset['class'] != 'unknown']
+
+x = dataset.iloc[:,1:169]
+y = dataset['class']
+x_tr,x_val,y_tr,y_val = train_test_split(x,y, test_size=0.30,random_state=28)
+
+
+#RF on raw data
+rfc= RFC(criterion = 'entropy' , n_estimators =100 , random_state = 28 , n_jobs =3)
+#rfc= RFC(criterion = 'gini' , n_estimators = 100 , random_state = 28 )
+rfc.fit(x_tr,y_tr)
+
+pred = rfc.predict(x_val)
+cm = confusion_matrix(y_val,pred)
+F1 = f1_score(y_val,pred,pos_label='1')
+Recall = recall_score(y_val,pred,pos_label='1')
+Precision = precision_score(y_val,pred,pos_label='1')
+
+print('RF on raw data')
+print('Precision: ', Precision,' Recall: ', Recall, ' F1: ', F1)
+print(cm)
+
+#RF on DGI embeds
+rfc.fit(train_embs.cpu(),train_lbls.cpu())
+
+pred_embs = rfc.predict(test_embs.cpu())
+cm = confusion_matrix(test_lbls.cpu(),pred_embs)
+F1 = f1_score(test_lbls.cpu(),pred_embs,pos_label=0)
+Recall = recall_score(test_lbls.cpu(),pred_embs,pos_label=0)
+Precision = precision_score(test_lbls.cpu(),pred_embs,pos_label=0)
+
+print('RF on DGI embeds')
+print('Precision: ', Precision,' Recall: ', Recall, ' F1: ', F1)
+print(cm)
