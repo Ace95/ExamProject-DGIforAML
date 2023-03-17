@@ -7,11 +7,11 @@ In the folder "Papers" you can find all the articles and/or papers that have bee
 
 
 ### References
-Velickovic P., Fedus W. Hamilton W.L, Liò P., Bengio Y. and Hjelm R D.: [Deep Graph Infomax](https://arxiv.org/pdf/1809.10341.pdf) , International Conference on Learning Representations (2019)
+- Velickovic P., Fedus W. Hamilton W.L, Liò P., Bengio Y. and Hjelm R D.: [Deep Graph Infomax](https://arxiv.org/pdf/1809.10341.pdf) , International Conference on Learning Representations (2019);
 
-Weng Lo W., Kulatilleke G. K., Sarhan M., Layeghy S., and Portmann M.: [Inspection-L: Self-Supervised GNN Node Embeddings
-for Money Laundering Detection in Bitcoin](https://arxiv.org/pdf/2203.10465.pdf), Arxiv (2022)
+- Weng Lo W., Kulatilleke G. K., Sarhan M., Layeghy S., and Portmann M.: [Inspection-L: Self-Supervised GNN Node Embeddings
+for Money Laundering Detection in Bitcoin](https://arxiv.org/pdf/2203.10465.pdf), Arxiv (2022);
 
-Bellei C.: [The Elliptic Data Set: opening up machine learning on the blockchain](https://medium.com/elliptic/the-elliptic-data-set-opening-up-machine-learning-on-the-blockchain-e0a343d99a14), Medium (2019)
+- Bellei C.: [The Elliptic Data Set: opening up machine learning on the blockchain](https://medium.com/elliptic/the-elliptic-data-set-opening-up-machine-learning-on-the-blockchain-e0a343d99a14), Medium (2019);
 
-Weber M., Domeniconi G., Chen J., Weidele D. K. I., Bellei C., Robinson T., Leiserson C. E.:[Anti-Money Laundering in Bitcoin: Experimenting with Graph Convolutional Networks for Financial Forensics](https://arxiv.org/pdf/1908.02591.pdf), KDD ’19 Workshop on Anomaly Detection in Finance (2019)
+- Weber M., Domeniconi G., Chen J., Weidele D. K. I., Bellei C., Robinson T., Leiserson C. E.:[Anti-Money Laundering in Bitcoin: Experimenting with Graph Convolutional Networks for Financial Forensics](https://arxiv.org/pdf/1908.02591.pdf), KDD ’19 Workshop on Anomaly Detection in Finance (2019).
