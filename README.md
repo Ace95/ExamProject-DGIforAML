@@ -3,7 +3,7 @@ Exam project for the 2022/23 course in Blockchain & Cryptocurrencies at UNIBO
 
 This work aims to present a new way to study Bitcoin transactions utilizing Graph Neural Networks (GNNs) in order to detect illicit activities on the blockchain environment. We show how the Deep Graph Infomax (DGI) embeddings allow us to obtain better results in finding illicit transactions when paired with standard classification methods like Random Forest (RF).
 
-In the folder "Papers" you can find articles and papers that have been used to develop this solution and a report describing the implemented methods and the results.  
+In the folder "Papers" you can find articles and papers that have been used to develop this solution and the full [report](https://github.com/Ace95/ExamProject-DGIforAML/blob/main/Papers/Report.pdf) of the project.  
 
 ### Usage
 
