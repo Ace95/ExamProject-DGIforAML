@@ -8,7 +8,7 @@ In the folder "Papers" you can find articles and papers that have been used to d
 ### Usage
 
 #### Local Run 
-1) Clone this repository on you machine;
+1) Clone this repository on your machine;
 2) Download the [Elliptic data set](https://www.kaggle.com/datasets/ellipticco/elliptic-data-set) in the relative folder "data";
 3) Run execute.py.
 Note: It is higly recommended to run this script on machine with a powerful GPU (possibly Nvidia with CUDA).
