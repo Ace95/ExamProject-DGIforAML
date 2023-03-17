@@ -1,4 +1,4 @@
-DGI for Anti-Money Laundering
+## DGI for Anti-Money Laundering
 Exam project for the 2022/23 course in Blockchain & Cryptocurrencies at UNIBO 
 
 This work aims to present a new way to study Bitcoin transactions utilizing Graph Neural Networks (GNNs) in order to detect illicit activities on the blockchain environment. We show how the Deep Graph Infomax (DGI) embeddings allow us to obtain better results in finding illicit transactions when paired with standard classification methods like Random Forest (RF).
