@@ -15,7 +15,7 @@ Note: It is higly recommended to run this script on machine with a powerful GPU 
 
 #### Colab Run
 You can run the full training and test on [Google Colab](https://colab.research.google.com/drive/1lC8aJC7rzri8vndtH1pbcUyWqDfJcGWK?usp=sharing).
-Note: you may need to fix some hyper-parameters depending which plan you are using on Colab in order to avoid CUDA OOM errors.
+Note: you may need to fix some hyper-parameters depending on which plan you are using on Colab in order to avoid CUDA OOM errors.
 
 ### References
 - Velickovic P., Fedus W. Hamilton W.L, Liò P., Bengio Y. and Hjelm R D.: [Deep Graph Infomax](https://arxiv.org/pdf/1809.10341.pdf) , International Conference on Learning Representations (2019);
