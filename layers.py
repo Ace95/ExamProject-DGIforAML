@@ -25,7 +25,6 @@ class DGI(torch.nn.Module):
 
         return ret
 
-    # Detach the return variables
     def embed(self, seq, adj, sparse, msk):
         h_1 = self.gcn(seq, adj, sparse)
         c = self.read(h_1, msk)
@@ -106,6 +105,8 @@ class GCN(torch.nn.Module):
             out += self.bias
         
         return self.act(out)
+
+#LogReg implementation
 
 class LogReg(nn.Module):
     def __init__(self, ft_in, nb_classes):

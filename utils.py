@@ -12,7 +12,7 @@ def check(name, unique):
     return name
 
 
-def load_data(data_dir='./data/', random_state=28):
+def load_data(data_dir='./Elliptic/raw/', random_state=28):
 
     edges = pd.read_csv(data_dir + 'elliptic_txs_edgelist.csv')
     features = pd.read_csv(data_dir + 'elliptic_txs_features.csv', header=None)
@@ -27,23 +27,16 @@ def load_data(data_dir='./data/', random_state=28):
         right_on='txId',
         how='left')
     features = features[features['class'] != 'unknown']
-    ratio = sum(features['class'] == '1') * 2 * 0.25 / len(features)
-    features, X_test, _, _ = train_test_split(
-        features, features['class'], stratify=features['class'], random_state=random_state, test_size=ratio)
-    X_train, X_val, y_train, y_val = train_test_split(
-        features, features['class'], stratify=features['class'], random_state=random_state)
+    X_train, X_test, y_train, y_test = train_test_split(
+        features, features['class'], stratify=features['class'], random_state=random_state, test_size=0.50)
     under_sampler = RandomUnderSampler(random_state=random_state)
-    X_train, _ = under_sampler.fit_resample(X_train, y_train)
-    X_val, _ = under_sampler.fit_resample(X_val, y_val)
+    X_train, y_train = under_sampler.fit_resample(X_train, y_train)
     idx_train = range(len(X_train))
-    idx_val = range(len(X_train), len(X_train) + len(X_val))
     idx_test = range(
+        len(X_train),
         len(X_train) +
-        len(X_val),
-        len(X_train) +
-        len(X_val) +
         len(X_test))
-    features = pd.concat([X_train, X_val, X_test])
+    features = pd.concat([X_train, X_test])
     unique = features['txId'].unique()
     edges['txId1'] = edges['txId1'].apply(lambda name: check(name, unique))
     edges['txId2'] = edges['txId2'].apply(lambda name: check(name, unique))
@@ -61,7 +54,7 @@ def load_data(data_dir='./data/', random_state=28):
     edges['txId2'] = edges['txId2'].apply(lambda name: features_idx[name])
     features['class'] = features['class'].apply(lambda name: class_idx[name])
     labels = features['class']
-    classes = sorted(list(set(labels)), reverse=True)
+    classes = sorted(list(set(labels)), reverse=False)
     classes_dict = {
         c: np.identity(
             len(classes))[
@@ -80,14 +73,11 @@ def load_data(data_dir='./data/', random_state=28):
         idx_features_labels.shape[0], idx_features_labels.shape[0]), dtype=np.float32)
     adj = adj + adj.T.multiply(adj.T > adj) - adj.multiply(adj.T > adj)
     features = normalize_features(features)
-    #adj = normalize_adj(adj + sp.eye(adj.shape[0]))
-    #adj = torch.FloatTensor(np.array(adj.todense()))
     features = torch.FloatTensor(np.array(features.todense()))
     labels = torch.FloatTensor(np.where(labels)[1])
     idx_train = torch.LongTensor(idx_train)
-    idx_val = torch.LongTensor(idx_val)
     idx_test = torch.LongTensor(idx_test)
-    return adj, features, labels, idx_train, idx_val, idx_test
+    return adj, features, labels, idx_train, idx_test, X_train, X_test, y_train, y_test
 
 
 def normalize_adj(mx):
@@ -108,15 +98,6 @@ def normalize_features(mx):
     r_mat_inv = sp.diags(r_inv)
     mx = r_mat_inv.dot(mx)
     return mx
-
-def preprocess_features(features):
-
-    rowsum = np.array(features.sum(1))
-    r_inv = np.power(rowsum, -1).flatten()
-    r_inv[np.isinf(r_inv)] = 0.
-    r_mat_inv = sp.diags(r_inv)
-    features = r_mat_inv.dot(features)
-    return features
 
 def sparse_mx_to_torch_sparse_tensor(sparse_mx):
     

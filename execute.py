@@ -10,19 +10,18 @@ from sklearn.metrics import confusion_matrix,f1_score, precision_score, recall_s
 from sklearn.model_selection import train_test_split
 
 
+# DGI hyperparameters
 batch_size = 1
 nb_epochs = 1000
-patience = 100
+patience = 200
 lr = 0.01
-l2_coef = 0.0
-drop_prob = 0.0
+l2_coef = 0.001
 hid_units = 256
 sparse = True
 nonlinearity = 'prelu'
 
 
-adj, features, labels, idx_train, idx_val, idx_test = load_data()
-features = preprocess_features(features)
+adj, features, labels, idx_train, idx_test, X_train, X_test, y_train, y_test = load_data()
 
 nb_nodes = features.shape[0]
 ft_size = features.shape[1]
@@ -39,9 +38,9 @@ else:
 features = torch.FloatTensor(features[np.newaxis])
 if not sparse:
     adj = torch.FloatTensor(adj[np.newaxis])
+    
 labels = torch.FloatTensor(labels[np.newaxis])
 idx_train = torch.LongTensor(idx_train)
-idx_val = torch.LongTensor(idx_val)
 idx_test = torch.LongTensor(idx_test)
 
 model = DGI(ft_size, hid_units, nonlinearity)
@@ -57,7 +56,6 @@ if torch.cuda.is_available():
         adj = adj.cuda()
     labels = labels.cuda()
     idx_train = idx_train.cuda()
-    idx_val = idx_val.cuda()
     idx_test = idx_test.cuda()
 
 b_xent = nn.BCEWithLogitsLoss()
@@ -66,6 +64,7 @@ cnt_wait = 0
 best = 1e9
 best_t = 0
 
+#Train DGI encoder
 for epoch in range(nb_epochs):
     model.train()
     optimiser.zero_grad()
@@ -102,24 +101,18 @@ for epoch in range(nb_epochs):
     loss.backward()
     optimiser.step()
 
-    model.load_state_dict(torch.load('best_dgi.pkl'))
+model.load_state_dict(torch.load('best_dgi.pkl')) #Select the best performing model
 
-    embeds, _ = model.embed(features, sp_adj if sparse else adj, sparse, None)
-    train_embs = embeds[0, idx_train]
-    val_embs = embeds[0, idx_val]
-    test_embs = embeds[0, idx_test]
+# Get node embeddings 
+embeds, _ = model.embed(features, sp_adj if sparse else adj, sparse, None)
+train_embs = embeds[0, idx_train]
+test_embs = embeds[0, idx_test]
 
-    train_lbls = labels[0, idx_train].type(torch.LongTensor)
-    val_lbls = labels[0, idx_val].type(torch.LongTensor)
-    test_lbls = labels[0, idx_test].type(torch.LongTensor)
+train_lbls = labels[0, idx_train].type(torch.LongTensor)
+test_lbls = labels[0, idx_test].type(torch.LongTensor)
 
-    train_lbls = train_lbls.cuda()
-    val_lbls = val_lbls.cuda()
-    test_lbls = test_lbls.cuda()
-
-    tot = torch.zeros(1)
-    tot = tot.cuda()
-
+train_lbls = train_lbls.cuda()
+test_lbls = test_lbls.cuda()
 
 # Logistic Regression
 accs = []
@@ -151,37 +144,31 @@ Recall = recall_score(test_lbls.cpu(),preds.cpu(),pos_label=0)
 Precision = precision_score(test_lbls.cpu(),preds.cpu(),pos_label=0)
 cm = confusion_matrix(test_lbls.cpu(),preds.cpu())
 
+print('LogReg with Node Embeddings')
 print('Precision: ', Precision,' Recall: ', Recall, ' F1: ', F1)
 print(cm)
 
 # Random Forest
+rfc= RFC(criterion = 'gini' , n_estimators = 200 , random_state = 28, max_features=None,bootstrap=True)
 
-data_ft = pd.read_csv('./Elliptic/raw/elliptic_txs_features.csv', header=None)
-data_ed = pd.read_csv('./Elliptic/raw/elliptic_txs_edgelist.csv')
-data_lb = pd.read_csv('./Elliptic/raw/elliptic_txs_classes.csv')
+y_train = np.array(y_train).astype(int)
+y_test = np.array(y_test).astype(int)
 
-dataset = data_ft.merge(data_ed, right_index=True, left_index=True)
-dataset = dataset.merge(data_lb, right_index=True, left_index=True) 
-dataset.drop(columns=['txId'],inplace=True)
-dataset = dataset[dataset['class'] != 'unknown']
-
-x = dataset.iloc[:,1:169]
-y = dataset['class']
-x_tr,x_val,y_tr,y_val = train_test_split(x,y, test_size=0.30,random_state=28)
-
+X_train = X_train.drop('class',axis=1)
+X_train = X_train.drop('txId',axis=1)
+X_test = X_test.drop('class',axis=1)
+X_test = X_test.drop('txId',axis=1)
 
 #RF on raw data
-rfc= RFC(criterion = 'entropy' , n_estimators =100 , random_state = 28 , n_jobs =3)
-#rfc= RFC(criterion = 'gini' , n_estimators = 100 , random_state = 28 )
-rfc.fit(x_tr,y_tr)
+rfc.fit(X_train,y_train)
 
-pred = rfc.predict(x_val)
-cm = confusion_matrix(y_val,pred)
-F1 = f1_score(y_val,pred,pos_label='1')
-Recall = recall_score(y_val,pred,pos_label='1')
-Precision = precision_score(y_val,pred,pos_label='1')
+pred = rfc.predict(X_test)
+cm = confusion_matrix(y_test,pred)
+F1 = f1_score(y_test,pred,pos_label=1)
+Recall = recall_score(y_test,pred,pos_label=1)
+Precision = precision_score(y_test,pred,pos_label=1)
 
-print('RF on raw data')
+print('RF with raw data')
 print('Precision: ', Precision,' Recall: ', Recall, ' F1: ', F1)
 print(cm)
 
@@ -197,3 +184,26 @@ Precision = precision_score(test_lbls.cpu(),pred_embs,pos_label=0)
 print('RF on DGI embeds')
 print('Precision: ', Precision,' Recall: ', Recall, ' F1: ', F1)
 print(cm)
+
+#RF with data augmentation
+tr_embs = pd.DataFrame(train_embs.cpu()).astype(float)
+tst_embs = pd.DataFrame(test_embs.cpu()).astype(float)
+X_train = pd.DataFrame(X_train).astype(float)
+X_test = pd.DataFrame(X_test).astype(float)
+
+# Apply data augmentation
+train_embs.index = X_train.index
+new_train = pd.concat((X_train,tr_embs),axis=1)
+tst_embs.index = X_test.index
+new_test = pd.concat((X_test,tst_embs),axis=1)
+
+new_train.columns = new_train.columns.astype(str)
+new_test.columns = new_test.columns.astype(str)
+
+rfc.fit(new_train,y_train)
+
+pred = rfc.predict(new_test)
+cm = confusion_matrix(y_test,pred)
+F1 = f1_score(y_test,pred,pos_label=1)
+Recall = recall_score(y_test,pred,pos_label=1)
+Precision = precision_score(y_test,pred,pos_label=1)
